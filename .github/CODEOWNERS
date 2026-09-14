@@ -1,0 +1,31 @@
+# Platy - ownership of the boundary control mechanism
+#
+# RFP B.8: "Every pull request is reviewed by a senior profile before merging -
+# a stronger requirement for any offshore team, where code review is the main
+# remote quality safety net."
+#
+# A boundary rule anyone can silently relax is not a control. These paths are the
+# enforcement mechanism itself, so changing them requires senior review from a
+# CODEOWNER - which is the same answer to B.8, expressed as tooling rather than
+# as a promise about process.
+#
+# Replace @tahirwaleed399 with the GitHub team handle once the client org exists.
+
+# The boundary rules (R1-R5).
+/.dependency-cruiser.cjs        @tahirwaleed399
+
+# The CI job that blocks the merge, and repo ownership itself.
+/.github/                       @tahirwaleed399
+
+# The architecture tests, including the evasion suite.
+/tests/architecture/            @tahirwaleed399
+
+# Coverage thresholds, including the B.8 100% chain-reaction gates.
+/vitest.config.ts               @tahirwaleed399
+
+# The cross-module wire format. Changing a contract is an architecture decision:
+# in Phase 2 these payloads become network payloads between services.
+/src/contracts/                 @tahirwaleed399
+
+# Module ownership boundaries in the shared database (rule R3).
+/src/platform/db/schema/        @tahirwaleed399

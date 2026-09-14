@@ -1,0 +1,77 @@
+# Platy - module boundary enforcement (RFP B.1)
+#
+# This workflow is the technical control mechanism RFP B.1 requires. The job
+# named `architecture` is configured as a REQUIRED STATUS CHECK under branch
+# protection on `main`, which is what makes a boundary violation BLOCK THE MERGE
+# rather than merely report red. Those are different claims, and only the second
+# one satisfies "team discipline alone is not an acceptable answer".
+name: architecture
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  architecture:
+    name: architecture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      # `npm ci` is deliberate: it installs exactly what package-lock.json pins.
+      # dependency-cruiser needs a resolvable TypeScript compiler to see TS
+      # sources at all - see the guard step below.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # GUARD AGAINST A SILENT FALSE PASS.
+      # Without a resolvable TypeScript compiler, dependency-cruiser cruises 0
+      # modules, reports "no dependency violations found" and exits 0 - a green
+      # build that scanned nothing. This step fails loudly instead.
+      - name: Verify the boundary checker can see the source tree
+        run: |
+          MODULES=$(npm run --silent boundaries:json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).summary.totalCruised))")
+          echo "Modules cruised: $MODULES"
+          if [ "$MODULES" -lt 10 ]; then
+            echo "::error::Boundary checker cruised only $MODULES modules - it is not seeing the source tree. Refusing to report a green build."
+            exit 1
+          fi
+
+      # R1-R5. Exits non-zero on any error-severity violation, naming the rule,
+      # the source file and the target file.
+      - name: Enforce module boundaries
+        run: npm run boundaries
+
+      # RFP B.1 names two mechanisms: dependency rules AND architecture tests.
+      # RFP B.8 requires 100% coverage on chain-reaction hooks; thresholds are
+      # enforced in vitest.config.ts and fail the run when unmet.
+      - name: Architecture tests and coverage
+        run: npm run test:coverage
+
+      # Rendered on the PR's Summary tab - zero edges between feature modules,
+      # all cross-module traffic through contracts/.
+      - name: Publish module graph
+        if: always()
+        run: |
+          {
+            echo '## Module dependency graph'
+            echo ''
+            echo 'Zero edges between `staffing`, `timetable` and `docs`.'
+            echo 'All cross-module traffic goes through `contracts/`.'
+            echo ''
+            echo '```mermaid'
+            npm run --silent boundaries:graph
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
