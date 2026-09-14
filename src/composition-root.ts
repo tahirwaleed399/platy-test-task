@@ -1,4 +1,5 @@
 import { EventBus } from "./platform/event-bus/event-bus.js";
+import { registerDocsSubscriptions } from "./modules/docs/api/subscriptions.js";
 import { ChecklistRepository } from "./modules/docs/infrastructure/checklist-repository.js";
 import { AssignmentRepository } from "./modules/staffing/infrastructure/assignment-repository.js";
 import { StaffingApi } from "./modules/staffing/api/staffing-api.js";
@@ -27,8 +28,10 @@ export function createApplication(): Application {
   const assignments = new AssignmentRepository();
   const checklists = new ChecklistRepository();
 
+  registerDocsSubscriptions(eventBus, checklists);
+
   return {
-    staffing: new StaffingApi(assignments, checklists),
+    staffing: new StaffingApi(assignments, eventBus),
     checklists,
     assignments,
     eventBus,
