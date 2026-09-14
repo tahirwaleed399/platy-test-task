@@ -1,4 +1,4 @@
-import type { ChecklistRepository } from "../../docs/infrastructure/checklist-repository.js";
+import type { EventBus } from "../../../platform/event-bus/event-bus.js";
 import { confirmAssignment } from "../application/confirm-assignment.js";
 import { AssignmentRepository } from "../infrastructure/assignment-repository.js";
 
@@ -6,13 +6,13 @@ import { AssignmentRepository } from "../infrastructure/assignment-repository.js
 export class StaffingApi {
   constructor(
     private readonly repository: AssignmentRepository,
-    private readonly checklists: ChecklistRepository,
+    private readonly eventBus: EventBus,
   ) {}
 
   async confirm(assignmentId: string): Promise<void> {
     await confirmAssignment(assignmentId, {
       repository: this.repository,
-      checklists: this.checklists,
+      eventBus: this.eventBus,
     });
   }
 }
