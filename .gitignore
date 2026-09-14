@@ -1,5 +1,8 @@
 node_modules/
 coverage/
+temp_auto_push.bat
 dist/
 *.log
 .DS_Store
+.gitignore
+branch_structure.json
