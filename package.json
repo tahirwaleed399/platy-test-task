@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Platy Phase 1a - CI-enforced module boundaries demonstration (RFP B.1)",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

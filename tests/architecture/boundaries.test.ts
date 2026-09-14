@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -30,6 +30,22 @@ interface CruiseSummary {
 }
 
 /**
+ * The cruiser's entry point, resolved from this project rather than from the
+ * working directory. Invoking it through `node <path>` keeps the evasion
+ * fixtures free of any node_modules of their own - no install, no symlink, and
+ * therefore no platform-specific link semantics to get wrong. (An earlier
+ * version linked node_modules with a Windows-only "junction", which passed
+ * locally and failed on the Linux CI runner.)
+ */
+const DEPCRUISE_BIN = join(
+  process.cwd(),
+  "node_modules",
+  "dependency-cruiser",
+  "bin",
+  "dependency-cruiser.mjs",
+);
+
+/**
  * Runs the cruiser and returns its summary.
  *
  * `cwd` matters: dependency-cruiser resolves targets, the config and tsconfig
@@ -38,7 +54,7 @@ interface CruiseSummary {
  */
 function cruise(target: string, cwd: string): CruiseSummary {
   const args = [
-    "depcruise",
+    DEPCRUISE_BIN,
     target,
     "--config",
     ".dependency-cruiser.cjs",
@@ -47,10 +63,9 @@ function cruise(target: string, cwd: string): CruiseSummary {
   ];
   let stdout: string;
   try {
-    stdout = execFileSync("npx", args, {
+    stdout = execFileSync(process.execPath, args, {
       cwd,
       encoding: "utf8",
-      shell: process.platform === "win32",
       maxBuffer: 20 * 1024 * 1024,
     });
   } catch (error) {
@@ -168,14 +183,6 @@ describe("architecture: R1 resists evasion", () => {
       `  const m = await import("../../docs/application/generate-checklist.js");\n` +
       `  return m.generateChecklist();\n` +
       `}\n`);
-    // The fixture needs to resolve `depcruise` and `typescript`. Linking the
-    // project's node_modules is cheaper than a full install per test run, and
-    // keeps the fixture cruising with the exact versions under test.
-    symlinkSync(
-      join(process.cwd(), "node_modules"),
-      join(fixtureRoot, "node_modules"),
-      "junction",
-    );
   }, 120_000);
 
   it("catches all three evasion routes", () => {
