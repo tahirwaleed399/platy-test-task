@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "demo/blocked-merge",
+    "demo/illegal-cross-module-import",
+    "main"
+  ],
+  "parent": {
+    "demo/blocked-merge": "main",
+    "demo/illegal-cross-module-import": "main",
+    "main": null
+  },
+  "order": [
+    "main",
+    "demo/blocked-merge",
+    "demo/illegal-cross-module-import"
+  ]
+}
